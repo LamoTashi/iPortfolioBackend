@@ -1,0 +1,8 @@
+bin/
+obj/
+*.db
+*.pem
+*.pfx
+.env
+.vs/
+cert/
