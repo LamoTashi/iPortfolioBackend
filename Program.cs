@@ -22,18 +22,21 @@ if (string.IsNullOrEmpty(jwtKey) || jwtKey.Length < 32)
 }
 var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
-// HTTPS certificate for Kestrel
-builder.WebHost.ConfigureKestrel(options =>
+if (builder.Environment.IsDevelopment())
 {
-    options.ListenLocalhost(7025, listenOptions =>
+    // HTTPS certificate for Kestrel (development only)
+    builder.WebHost.ConfigureKestrel(options =>
     {
-        var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert", "localhost+2.pem");
-        var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "cert", "localhost+2-key.pem");
-        var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-        cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
-        listenOptions.UseHttps(cert);
+        options.ListenLocalhost(7025, listenOptions =>
+        {
+            var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert", "localhost+2.pem");
+            var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "cert", "localhost+2-key.pem");
+            var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+            cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+            listenOptions.UseHttps(cert);
+        });
     });
-});
+}
 
 // Register DbContext with SQLite
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=portfolio.db";
