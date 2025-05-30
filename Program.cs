@@ -214,4 +214,11 @@ app.MapDelete("/contact/{id:int}", [Microsoft.AspNetCore.Authorization.Authorize
 
     return Results.NoContent();
 });
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();  // This applies all pending migrations
+}
+
 app.Run();
