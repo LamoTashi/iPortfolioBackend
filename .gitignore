@@ -1,6 +1,5 @@
 bin/
 obj/
-*.db
 *.pem
 *.pfx
 .env
