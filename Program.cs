@@ -94,7 +94,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:52017",
                 "https://localhost:52017",// your local dev frontend (change port if needed)
-                "https://i-portfolio-topaz-alpha.vercel.app/"  // replace with your actual Vercel frontend URL
+                "https://i-portfolio-topaz-alpha.vercel.app"  // replace with your actual Vercel frontend URL
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
