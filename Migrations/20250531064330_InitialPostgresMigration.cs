@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace iPortfolioBackend.Migrations
 {
     /// <inheritdoc />
-    public partial class AddContactMessages : Migration
+    public partial class InitialPostgresMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,6 +25,22 @@ namespace iPortfolioBackend.Migrations
                 {
                     table.PrimaryKey("PK_ContactMessages", x => x.Id);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "Projects",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Title = table.Column<string>(type: "TEXT", nullable: false),
+                    Description = table.Column<string>(type: "TEXT", nullable: false),
+                    ImageUrl = table.Column<string>(type: "TEXT", nullable: false),
+                    GitHubUrl = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Projects", x => x.Id);
+                });
         }
 
         /// <inheritdoc />
@@ -32,6 +48,9 @@ namespace iPortfolioBackend.Migrations
         {
             migrationBuilder.DropTable(
                 name: "ContactMessages");
+
+            migrationBuilder.DropTable(
+                name: "Projects");
         }
     }
 }

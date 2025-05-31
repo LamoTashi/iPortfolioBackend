@@ -11,8 +11,8 @@ using iPortfolioBackend.Data;
 namespace iPortfolioBackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250529164458_AddContactMessages")]
-    partial class AddContactMessages
+    [Migration("20250531064330_InitialPostgresMigration")]
+    partial class InitialPostgresMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
