@@ -38,11 +38,10 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
-// Register DbContext with SQLite
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=portfolio.db";
-
+// Register DbContext with postgreSQL
+var connectionString = builder.Configuration["DATABASE_URL"];
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseNpgsql(connectionString));
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
