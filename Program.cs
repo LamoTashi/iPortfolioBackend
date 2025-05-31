@@ -141,17 +141,19 @@ app.MapGet("/dashboard", [Microsoft.AspNetCore.Authorization.Authorize] () =>
     Results.Ok(new { message = "Welcome to your portfolio dashboard!" })
 );
 
-// Grouped Project CRUD endpoints with Authorization
-var projectsGroup = app.MapGroup("/projects").RequireAuthorization();
-
-projectsGroup.MapGet("/", async (AppDbContext db) =>
+// PUBLIC GET routes
+app.MapGet("/projects", async (AppDbContext db) =>
     await db.Projects.ToListAsync());
 
-projectsGroup.MapGet("/{id:int}", async (int id, AppDbContext db) =>
+app.MapGet("/projects/{id:int}", async (int id, AppDbContext db) =>
 {
     var project = await db.Projects.FindAsync(id);
     return project is null ? Results.NotFound() : Results.Ok(project);
 });
+
+
+// ADMIN routes (protected)
+var projectsGroup = app.MapGroup("/projects").RequireAuthorization();
 
 projectsGroup.MapPost("/", async (Projects project, AppDbContext db) =>
 {
