@@ -8,6 +8,8 @@ using iPortfolioBackend.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
+using Microsoft.AspNetCore.Mvc;
 
 // Load environment variables early
 DotNetEnv.Env.Load();
@@ -38,8 +40,33 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
-// Register DbContext with postgreSQL
-var connectionString = builder.Configuration["DATABASE_URL"];
+// Helper to parse Render DATABASE_URL to Npgsql connection string
+string ConvertDatabaseUrlToConnectionString(string databaseUrl)
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    var builder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port,
+        Username = userInfo[0],
+        Password = userInfo[1],
+        Database = uri.AbsolutePath.TrimStart('/'),
+        SslMode = SslMode.Require,
+        TrustServerCertificate = true,
+        Pooling = true
+    };
+    return builder.ConnectionString;
+}
+
+var databaseUrl = builder.Configuration["DATABASE_URL"];
+if (string.IsNullOrEmpty(databaseUrl))
+{
+    throw new Exception("DATABASE_URL environment variable is not set.");
+}
+
+var connectionString = ConvertDatabaseUrlToConnectionString(databaseUrl);
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -92,8 +119,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:52017",
-                "https://localhost:52017",// your local dev frontend (change port if needed)
-                "https://i-portfolio-topaz-alpha.vercel.app"  // replace with your actual Vercel frontend URL
+                "https://localhost:52017", // your local dev frontend (change port if needed)
+                "https://i-portfolio-topaz-alpha.vercel.app"  // your deployed frontend URL
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
@@ -110,7 +137,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // LOGIN ENDPOINT
-app.MapPost("/login", (LoginRequest login, IConfiguration config) =>
+app.MapPost("/login", ([FromBody] LoginRequest login, IConfiguration config) =>
 {
     var adminUsername = config["ADMIN_USERNAME"];
     var adminPasswordHash = config["ADMIN_PASSWORD_HASH"];
@@ -150,18 +177,17 @@ app.MapGet("/projects/{id:int}", async (int id, AppDbContext db) =>
     return project is null ? Results.NotFound() : Results.Ok(project);
 });
 
-
 // ADMIN routes (protected)
 var projectsGroup = app.MapGroup("/projects").RequireAuthorization();
 
-projectsGroup.MapPost("/", async (Projects project, AppDbContext db) =>
+projectsGroup.MapPost("/", async ([FromBody] Projects project, AppDbContext db) =>
 {
     db.Projects.Add(project);
     await db.SaveChangesAsync();
     return Results.Created($"/projects/{project.Id}", project);
 });
 
-projectsGroup.MapPut("/{id:int}", async (int id, Projects updated, AppDbContext db) =>
+projectsGroup.MapPut("/{id:int}", async (int id, [FromBody] Projects updated, AppDbContext db) =>
 {
     var project = await db.Projects.FindAsync(id);
     if (project is null) return Results.NotFound();
@@ -186,7 +212,7 @@ projectsGroup.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
 });
 
 // Contact POST API
-app.MapPost("/contact", async (ContactMessage contact, AppDbContext db) =>
+app.MapPost("/contact", async ([FromBody] ContactMessage contact, AppDbContext db) =>
 {
     if (string.IsNullOrWhiteSpace(contact.Name) || string.IsNullOrWhiteSpace(contact.Message))
     {
@@ -219,10 +245,18 @@ app.MapDelete("/contact/{id:int}", [Microsoft.AspNetCore.Authorization.Authorize
     return Results.NoContent();
 });
 
+// Run migrations safely
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();  // This applies all pending migrations
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Migration error: " + ex);
+    }
 }
 
 app.Run();
